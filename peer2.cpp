@@ -21,7 +21,7 @@
 
 
 using namespace std;
-int port = 8082;
+int port = 8083;
 
 /*unsigned int rotateleft(unsigned int x , unsigned int n)
 {
@@ -184,7 +184,7 @@ void *Server(void *threadid)
 
    if(new_socket < 0)
    {
-      perror("Error Accepting!");
+      perror("Error Acc epting!");
       exit(0);
    }
 
@@ -280,22 +280,13 @@ void *Client(void *threadid)
         cout << dummy;
       }
 
-      else if(temp == "create_user")
-      {
-        // cout << "in peer before sending\n";
-        send(client_fd , &port , sizeof(port) , 0);
-        // cout << "in peer before sending\n";
-        int valread = read(client_fd , dummy , 100);
-        cout << dummy;
-      }
-
       else if(temp == "logout")
       {
         // cout << "in peer before sending\n";
         send(client_fd , &port , sizeof(port) , 0);
         // cout << "in peer before sending\n";
         int valread = read(client_fd , dummy , 100);
-        // cout << dummy;
+        cout << dummy;
         quit();
       }
 
@@ -308,75 +299,38 @@ void *Client(void *threadid)
         cout << dummy;
       }
 
-      else if(temp == "accept_requests")
-      {
-        cout << "in peer before sending\n";
-        send(client_fd , &port , sizeof(port) , 0);
-        cout << "in peer before sending\n";
-        int valread = read(client_fd , dummy , 100);
-        cout << dummy;
-      }
-
-      else if(temp == "list_requests")
-      {
-        int size;
-        memset(dummy , '\0' , 100);
-        cout << "Group Id\t" << "User Id\n";
-        recv(client_fd , &size , sizeof(int) , 0);
-        for(int i = 0 ; i < size ; i++){
-          int valread = read(client_fd , dummy ,100);
-          cout << dummy << "   \t   ";
-          memset(dummy , '\0' , 100);
-          valread = read(client_fd , dummy ,100);
-          cout << dummy << endl;
-          memset(dummy , '\0' , 100);
-        }
-      }
-
-      else if(temp == "join_group")
+      else if(temp == "get_sha")
       {
         // cout << "in peer before sending\n";
-        send(client_fd , &port , sizeof(port) , 0);
-        // cout << "in peer before sending\n";
-        int valread = read(client_fd , dummy , 100);
-        cout << dummy;
-      }
-
-      else if(temp == "get_sha\n")
-      {
-        // cout << "in peer before sending\n";
-        // cout << "in sha\n";
+        cout << "in sha\n";
         char dummy[200] = {0};
         recv(client_fd , dummy , 100 , 0);
-        // cout << "after read\n" << dummy << endl;
+        cout << "after read\n";
 
-        FILE *f = fopen(dummy , "rb+");
-        if(f == NULL){
-          cout << "erroe\n";
-          exit(0);
-        }
+        char* path = dummy;
+        cout << "path = " <<path <<endl;
+        memset ( dummy , '\0', 200);
 
+        FILE *f = fopen(path , "rb");
         fseek(f , 0 , SEEK_END);
-        int file_size = ftell(f) ;
+        int size = ftell(f) ;
         rewind(f);
-        // strcpy(dummy,(to_string(file_size)).c_str());
-        // cout << "file_size = " << file_size << endl;
-        send(client_fd , &file_size, sizeof(int) , 0);
-        // cout << "after sending size\n";
-        cout << endl;
+        cout << "file_size = " << size << endl;
+        send(client_fd , &size , sizeof(size) , 0);
+        cout << "after sending size\n";
 
-        char buffer[chunkSize];
+        /*char buffer[chunkSize];
         // unsigned char main_buffer[200000];
         int n;
         
-        while((n = fread(buffer , sizeof(char) , chunkSize , f)) > 0 && file_size > 0)
+        while((n = fread(buffer , sizeof(char) , chunkSize , f)) > 0 && size > 0)
         {
       
           unsigned char digest[SHA_DIGEST_LENGTH];
           char mdString[SHA_DIGEST_LENGTH*2];
           memset(buffer , '\0' , chunkSize);
           SHA1((unsigned char*)buffer , strlen(buffer) , digest);
-          file_size = file_size-n;
+          size = size-n;
           int i = 0;
           while(i < SHA_DIGEST_LENGTH)
           {
@@ -389,13 +343,15 @@ void *Client(void *threadid)
           strcpy(sha , hash.c_str());
           send(client_fd , sha , strlen(sha) , 0);
           mdString[i] = '\0';
-        }
+        }*/
         fclose(f);
         // send(client_fd , &port , sizeof(port) , 0);
         // // cout << "in peer before sending\n";
         // valread = read(client_fd , dummy , 100);
-        // cout << dummy;*/
+        // cout << dummy;
       }
+
+
 
       else
         cout << dummy << endl;

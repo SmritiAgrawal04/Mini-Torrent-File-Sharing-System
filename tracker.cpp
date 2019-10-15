@@ -20,19 +20,28 @@ struct info
     int port;
 };
 
-map<string , pair<string , string>> database;
-map<string , vector<int>> groups;
+map<pair<int ,string> , pair<string , string>> database;
+map<string , string> groups;
 map<pair<string ,string> , pair<string , int>> files;
-map<int , string> ports_info;
+// map<int , string> ports_info;
 vector<int> current_users;
+vector<pair<string , string>> requests;
+vector<pair<string , string>> members;
+
 
 
 bool create_user(string user_id , string password , int new_socket , int server_fd)
 {
-    map<string , pair<string , string>>::iterator itr;
+    char dummy[100] = {0};
+    string temp = "create_user";
+    strcpy(dummy , temp.c_str());
+    send(new_socket , dummy , strlen(dummy) , 0);
+    int owner;
+    recv(new_socket , &owner , sizeof(owner) , 0);
+    map<pair<int , string> , pair<string , string>>::iterator itr;
 	bool present = false;
-	char dummy[100] = {0};
-	for(auto itr = database.find(user_id); itr != database.end(); itr++)
+	memset(dummy ,'\0' , 100);
+	for(auto itr = database.find(make_pair(owner , user_id)); itr != database.end(); itr++)
 		present = true;
 
 	if(present)
@@ -45,11 +54,11 @@ bool create_user(string user_id , string password , int new_socket , int server_
 
 	else
 	{
-		pair<string , pair<string , string>> p;
-		p.first = user_id;
-		p.second.first = password;
-		p.second.second = "-1";
-		database.insert(p);
+		// pair<string , pair<string , string>> p;
+		// p.first = user_id;
+		// p.second.first = password;
+		// p.second.second = "-1";
+		database.insert(make_pair(make_pair(owner , user_id) , make_pair(password , "-1")));
 	}
     return true;
 }
@@ -80,8 +89,8 @@ void login(string user_id , string password , int new_socket , int server_fd)
     send(new_socket , dummy , strlen(dummy) , 0);
     int port;
     recv(new_socket , &port , sizeof(port) , 0);
-    map<string , pair<string , string>>::iterator itr;
-    itr = database.find(user_id);
+    map<pair<int , string> , pair<string , string>>::iterator itr;
+    itr = database.find(make_pair(port,user_id));
 
     if(itr != database.end())
     {
@@ -95,16 +104,12 @@ void login(string user_id , string password , int new_socket , int server_fd)
             string temp = "Login Successful.\n";
             strcpy(dummy , temp.c_str());
             send(new_socket , dummy , strlen(dummy) , 0);
-            pair<int  , string> p;
-            // cout << farzi;
-            p.first = port;
-            p.second = user_id;
-            ports_info.insert(p);
+            
             current_users.push_back(port);
             // cout << "port info added\n";
-            cout <<"size = " << current_users.size();
-            for(int i = 0 ; i < current_users.size() ; i++)
-                cout << current_users[i];
+            // cout <<"size = " << current_users.size();
+            // for(int i = 0 ; i < current_users.size() ; i++)
+            //     cout << current_users[i];
 
         }
     }
@@ -142,18 +147,25 @@ void create_group(string group_id , int new_socket)
     // string owner = string(dummy);
     if(present)
     {
-        map<string , vector<int>>:: iterator itr;
+        map<string , string>:: iterator itr;
         itr = groups.find(group_id);
         if(itr == groups.end())
         {
-            map<string , string>:: iterator itr;
-            pair<string , int> p;
+            map<pair<int ,string> , pair<string , string>>:: iterator it;
+            for(it = database.begin() ; it != database.end() ; ++it)
+            {
+                if(it->first.first == owner)
+                    break;
+            }
+
+            pair<string , string> p;
             p.first = group_id;
-            p.second = owner;
+            p.second = it->first.second;
             groups.insert(p);
             string temp = "Group created Successfully.\n";
             strcpy(dummy , temp.c_str());
             send(new_socket , dummy , strlen(dummy) , 0);
+            
         }
         
         else
@@ -177,7 +189,15 @@ void create_group(string group_id , int new_socket)
 
 void join_group(string group_id , int new_socket)
 {   
-    /*map<int , string>:: iterator itr;
+    char dummy[100] = {0};
+    string temp = "join_group";
+    strcpy(dummy , temp.c_str());
+    send(new_socket , dummy , strlen(dummy) , 0);
+    int port;
+    recv(new_socket , &port , sizeof(port) , 0);
+    cout << endl;
+
+    map<string , string>::iterator itr;
     itr = groups.find(group_id);
 
     if(itr == groups.end())
@@ -190,15 +210,25 @@ void join_group(string group_id , int new_socket)
 
     else
     {
-        int owner = itr->second;
+        map<pair<int ,string> , pair<string , string>>:: iterator it;
+        for(it = database.begin() ; it != database.end() ; ++it)
+            {
+                if(it->first.first == port)
+                    break;
+            }
+        requests.push_back(make_pair(group_id , it->first.second));
+        char dummy[100] = {0};
+        string temp = "Request Made.\n";
+        strcpy(dummy , temp.c_str());
+        send(new_socket , dummy , strlen(dummy) , 0);
 
-    }*/
+    }
 
 }
 
 void leave_group(string group_id , int new_socket)
 {
-    map<string , vector<int>>:: iterator itr;
+    /*map<string , vector<int>>:: iterator itr;
     itr = groups.find(group_id);
 
     if(itr == groups.end())
@@ -244,22 +274,80 @@ void leave_group(string group_id , int new_socket)
             strcpy(dummy , temp.c_str());
         }
 
+    }*/
+}
+
+void list_requests(string group_id , int new_socket)
+{
+    cout << endl;
+    char dummy[100] = {0};
+    string temp = "list_requests";
+    strcpy(dummy , temp.c_str());
+    send(new_socket , dummy , strlen(dummy) , 0);
+    cout << endl;
+    memset(dummy , '\0' , 100);
+    int size = requests.size();
+    send(new_socket , &size , sizeof(int) , 0);
+    cout << endl;
+    char farzi[100] = {0};
+
+    for(int i = 0 ; i < requests.size() ; i++)
+        if(requests[i].first == group_id)
+        {
+            // cout << requests[i].first << '\t' << requests[i].second << endl;
+            memset(farzi , '\0' , 100);
+            strcpy(farzi , (requests[i].first).c_str());
+            send(new_socket , farzi , strlen(farzi) , 0);
+            cout << endl;
+            memset(farzi , '\0' , 100);
+            strcpy(farzi , (requests[i].second).c_str());
+            send(new_socket , farzi , strlen(farzi) , 0);
+            cout << endl;
+            memset(farzi , '\0' , 100);
+
+        }
+}
+
+void accept_requests(string group_id , string user_id , int new_socket)
+{
+    char dummy[100] = {0};
+    string temp = "accept_requests";
+    strcpy(dummy , temp.c_str());
+    send(new_socket , dummy , strlen(dummy) , 0);
+    cout << endl;
+
+    for(int i = 0 ; i < requests.size() ; i++)
+    {
+        if(requests[i].first == group_id && requests[i].second == user_id)
+        { 
+            int port;
+            recv(new_socket , &port , sizeof(port) , 0);
+            cout << endl;
+
+            map<pair<int ,string> , pair<string , string>>:: iterator itr;
+            for(itr = database.begin() ; itr != database.end() ;itr++)
+            {
+                if(itr->first.first == port)
+                    break;
+            }
+
+            members.push_back(make_pair(itr->first.second , group_id));
+
+            
+            requests.erase(requests.begin() + i);
+
+            char dummy[100] = {0};
+            string temp = "Request Accepted.\n";
+            strcpy(dummy , temp.c_str());
+            send(new_socket , dummy , strlen(dummy) , 0);
+            break;
+        }
     }
-}
-
-void list_requests(string group_id)
-{
-
-}
-
-void accept_requests(string group_id , string user_id)
-{
-
 }
 
 void list_groups()
 {
-    map<string , vector<int>>:: iterator itr;
+    map<string , string>:: iterator itr;
     for(itr = groups.begin() ; itr != groups.end() ; ++itr)
         cout << itr->first << endl;
 }
@@ -276,10 +364,10 @@ void upload_files(string file_path , string group_id , int new_socket)
     string temp = "get_sha\n";
     strcpy(dummy , temp.c_str());
     send(new_socket , dummy , strlen(dummy) , 0);
-    memset(dummy ,'0' , 100);
+    memset(dummy ,'\0' , 100);
     strcpy(dummy , file_path.c_str());
     send(new_socket , dummy , strlen(dummy) ,0);
-    memset(dummy ,'0' , 100);
+    memset(dummy ,'\0' , 100);
 
     // int file_size;
     recv(new_socket , &file_size , sizeof(int) , 0);
@@ -433,7 +521,13 @@ void* check_input(void* sock)
     else if(strcmp(arguments[0] , "join_group") == 0)
     {
     	if(arguments.size() == 2)
+        {
     		join_group(arguments[1] , data->new_socket);
+            // for(int i = 0 ; i < requests.size() ; i++)
+            //     cout << requests[i].first << '\t' << requests[i].second << endl;
+
+        }
+
     	else
     	{
     		string temp = "Invalid Arguments!!\n";
@@ -457,7 +551,7 @@ void* check_input(void* sock)
     else if(strcmp(arguments[0] , "list_requests") == 0)
     {
     	if(arguments.size() == 2)
-    		list_requests(arguments[1]);
+    		list_requests(arguments[1] , data->new_socket);
     	else
     	{
     		string temp = "Invalid Arguments!!\n";
@@ -469,7 +563,12 @@ void* check_input(void* sock)
     else if(strcmp(arguments[0] , "accept_requests") == 0)
     {
     	if(arguments.size() == 3)
-    		accept_requests(arguments[1] , arguments[2]);
+        {
+    		accept_requests(arguments[1] , arguments[2] , data->new_socket);
+            // for(int i = 0 ; i < requests.size() ; i++)
+            //     cout  << requests[i].first << '\t' << requests[i].second << endl;
+        }
+
     	else
     	{
     		string temp = "Invalid Arguments!!\n";
@@ -497,9 +596,9 @@ void* check_input(void* sock)
     {
     	if(arguments.size() == 3){
     		upload_files(arguments[1] , arguments[2] , data->new_socket);
-            map<pair<string ,string> , pair<string , int>>::iterator itr;
-            for(itr = files.begin(); itr != files.end(); ++itr)
-                cout << itr->first.first << '\t' << itr->first.second << '\t' << itr->second.first << '\t' << itr->second.second << endl;
+            // map<pair<string ,string> , pair<string , int>>::iterator itr;
+            // for(itr = files.begin(); itr != files.end(); ++itr)
+            //     cout << itr->first.first << '\t' << itr->first.second << '\t' << itr->second.first << '\t' << itr->second.second << endl;
         }
 
     	else

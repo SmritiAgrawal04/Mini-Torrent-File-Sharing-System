@@ -63,19 +63,19 @@ int main()
 		exit(0);
 	}
 
-	char buffer[chunkSize];
-	int size, n;
+	FILE *f = fopen("/home/smriti/Desktop/output" , "wb");
+   char buffer[chunkSize];
+   int size , n;
 
-	recv(new_socket , &size , sizeof(size) , 0);
-	// cout<<"size "<<size;
-	while (( n = recv( new_socket , buffer , chunkSize, 0) ) > 0  &&  size > 0)
-	{
-	
-		fwrite (buffer , sizeof(char), n, f);
-		memset ( buffer , '\0', chunkSize);
-		size = size - n;
-	}
-
+   recv(new_socket , &size , sizeof(size) , 0);
+   // cout<<"size "<<size;
+   while (( n = recv( new_socket , buffer , chunkSize, 0) ) > 0  &&  size > 0)
+   {
+   
+      fwrite (buffer , sizeof(char), n, f);
+      memset ( buffer , '\0', chunkSize);
+      size = size - n;
+   }
 	
 	close(new_socket);
 	close(server_fd);
